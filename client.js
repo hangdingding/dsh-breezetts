@@ -26,7 +26,7 @@ window.__ModuleLoader__.load({
     /** Breeze rejects single requests above 1000 characters by default. */
     const CHUNK_LIMIT = 800;
     /** Bumped on every delivery so the Host log identifies the running page. */
-    const CLIENT_VERSION = '34';
+    const CLIENT_VERSION = '35';
     const STREAM_ROUTE = '/breeze-voice/stream';
     const CONFIG_ROUTE = '/breeze-voice/config';
     const VOICES_ROUTE = '/breeze-voice/voices';
@@ -1342,6 +1342,7 @@ window.__ModuleLoader__.load({
       const [designSaving, setDesignSaving] = React.useState(false);
       const [designNote, setDesignNote] = React.useState('');
       const [designPlaying, setDesignPlaying] = React.useState('');
+      const [switching, setSwitching] = React.useState(false);
       const designAudioRef = React.useRef(null);
       const previewRef = React.useRef(null);
       const copyTimer = React.useRef(null);
@@ -1456,6 +1457,31 @@ window.__ModuleLoader__.load({
         setDesignNote('');
         setDesignOpen(true);
       }, []);
+
+      const chooseVoice = React.useCallback(async (id) => {
+        if (!config || config.voiceId === id || switching) return;
+        setSwitching(true);
+        setError('');
+        setNotice('');
+        try {
+          const response = await fetch(CONFIG_ROUTE, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'x-breeze-client': CLIENT_VERSION },
+            body: JSON.stringify({ voiceId: id }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+          setConfig(data);
+          setVoiceDraft(data.voiceId);
+          setSpeedDraft(data.speed);
+          setNotice(t('settings.saved'));
+          refreshVoiceInfo();
+        } catch (failure) {
+          setError(failure instanceof Error && failure.message !== '' ? failure.message : t('settings.failed'));
+        } finally {
+          setSwitching(false);
+        }
+      }, [config, switching, t]);
 
       const closeDesign = React.useCallback(() => {
         stopDesignAudio();
@@ -1688,9 +1714,9 @@ window.__ModuleLoader__.load({
           h('button', {
             type: 'button',
             className: 'bv_btn bv_btnSmall',
-            disabled: voiceDraft === voice.id,
-            onClick: () => setVoiceDraft(voice.id),
-          }, voiceDraft === voice.id ? t('settings.selected') : t('settings.use'))));
+            disabled: switching || config.voiceId === voice.id,
+            onClick: () => chooseVoice(voice.id),
+          }, config.voiceId === voice.id ? t('settings.selected') : t('settings.use'))));
 
       return h('div', { className: 'bv_overlay', onClick: () => settingsUi.set(false) },
         h('div', {
