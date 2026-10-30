@@ -18,7 +18,8 @@
  */
 
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DEFAULTS = Object.freeze({
@@ -71,7 +72,10 @@ const DESIGN_PATH = '/breeze-voice/design';
 const DESIGN_AUDIO_PATH = '/breeze-voice/design/audio';
 const DESIGN_SAVE_PATH = '/breeze-voice/design/save';
 const CODE_COOLDOWN_MS = 60_000;
-const SETTINGS_FILE = fileURLToPath(new URL('./settings.json', import.meta.url));
+const LEGACY_SETTINGS_FILE = fileURLToPath(new URL('./settings.json', import.meta.url));
+/** User data lives outside the package so reinstalling or upgrading keeps it. */
+const DATA_DIR = process.env.DSH_HOME ? join(process.env.DSH_HOME, 'breeze-voice') : dirname(LEGACY_SETTINGS_FILE);
+const SETTINGS_FILE = join(DATA_DIR, 'settings.json');
 const MAX_PREVIEW_BYTES = 5_000_000;
 /** Fields the settings dialog owns; everything else stays in the patch. */
 const EDITABLE_KEYS = ['apiKey', 'voiceId', 'speed', 'instructions', 'languageCode', 'modelId', 'avatarUrl'];
@@ -738,11 +742,23 @@ function handleHealth(settings, req, res) {
  */
 function readOverrides() {
   try {
-    const parsed = JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'));
+    let raw = '';
+    let legacy = false;
+    if (existsSync(SETTINGS_FILE)) {
+      raw = readFileSync(SETTINGS_FILE, 'utf8');
+    } else if (existsSync(LEGACY_SETTINGS_FILE)) {
+      raw = readFileSync(LEGACY_SETTINGS_FILE, 'utf8');
+      legacy = true;
+    }
+    if (raw === '') return {};
+    const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
     const out = {};
     for (const key of EDITABLE_KEYS) {
       if (parsed[key] !== undefined) out[key] = parsed[key];
+    }
+    if (legacy && Object.keys(out).length > 0) {
+      void writeOverrides(out).catch(() => {});
     }
     return out;
   } catch {
@@ -757,6 +773,7 @@ function readOverrides() {
 async function writeOverrides(settings) {
   const body = {};
   for (const key of EDITABLE_KEYS) body[key] = settings[key];
+  await mkdir(DATA_DIR, { recursive: true });
   await writeFile(SETTINGS_FILE, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
 }
 
