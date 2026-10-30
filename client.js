@@ -26,7 +26,7 @@ window.__ModuleLoader__.load({
     /** Breeze rejects single requests above 1000 characters by default. */
     const CHUNK_LIMIT = 800;
     /** Bumped on every delivery so the Host log identifies the running page. */
-    const CLIENT_VERSION = '33';
+    const CLIENT_VERSION = '34';
     const STREAM_ROUTE = '/breeze-voice/stream';
     const CONFIG_ROUTE = '/breeze-voice/config';
     const VOICES_ROUTE = '/breeze-voice/voices';
@@ -244,6 +244,9 @@ window.__ModuleLoader__.load({
       '.bv_link:hover{color:var(--dsw-alias-label-primary)}',
       '.bv_range{width:100%;accent-color:var(--dsw-alias-state-business-primary)}',
       '.bv_footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px}',
+      '.bv_footerActions{display:flex;align-items:center;gap:8px}',
+      '.bv_cancel{height:34px;padding:0 18px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:0 0;color:var(--dsw-alias-label-primary);font-family:inherit;font-size:13px;cursor:pointer}',
+      '.bv_cancel:hover{background:var(--dsw-alias-interactive-bg-hover)}',
       '.bv_status{font-size:12px;color:var(--dsw-alias-label-caption);flex:1;min-width:0}',
       '.bv_primary{height:34px;padding:0 16px;border:none;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer}',
       '.bv_primary:disabled{opacity:.6;cursor:default}',
@@ -1815,8 +1818,14 @@ window.__ModuleLoader__.load({
               })),
             h('div', { className: 'bv_footer' },
               h('span', { className: 'bv_status' }, status),
-              h('button', { type: 'button', className: 'bv_primary', onClick: save, disabled: saving },
-                saving ? t('settings.saving') : t('settings.save'))))),
+              h('div', { className: 'bv_footerActions' },
+                h('button', {
+                  type: 'button',
+                  className: 'bv_cancel',
+                  onClick: () => settingsUi.set(false),
+                }, t('settings.close')),
+                h('button', { type: 'button', className: 'bv_primary', onClick: save, disabled: saving },
+                  saving ? t('settings.saving') : t('settings.save')))))),
         designOpen ? h('div', { className: 'bv_designLayer', onClick: closeDesign },
           h('div', { className: 'bv_designCard', onClick: (event) => event.stopPropagation() },
             h('div', { className: 'bv_designHead' },
