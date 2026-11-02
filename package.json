@@ -1,6 +1,6 @@
 {
   "name": "@local/breeze-voice",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "Read assistant replies aloud with a Breeze TTS endpoint",
   "type": "module",

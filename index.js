@@ -19,6 +19,7 @@
 
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -74,7 +75,8 @@ const DESIGN_SAVE_PATH = '/breeze-voice/design/save';
 const CODE_COOLDOWN_MS = 60_000;
 const LEGACY_SETTINGS_FILE = fileURLToPath(new URL('./settings.json', import.meta.url));
 /** User data lives outside the package so reinstalling or upgrading keeps it. */
-const DATA_DIR = process.env.DSH_HOME ? join(process.env.DSH_HOME, 'breeze-voice') : dirname(LEGACY_SETTINGS_FILE);
+const DSH_HOME = process.env.DSH_HOME || join(homedir(), '.dsh');
+const DATA_DIR = join(DSH_HOME, 'breeze-voice');
 const SETTINGS_FILE = join(DATA_DIR, 'settings.json');
 const MAX_PREVIEW_BYTES = 5_000_000;
 /** Fields the settings dialog owns; everything else stays in the patch. */
